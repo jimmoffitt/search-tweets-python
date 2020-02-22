@@ -1,22 +1,27 @@
+TODO:
+[] https://twitterdev.github.io/search-tweets-python-labs
+[]
+
+
 Python Twitter Search API
 =========================
 
-This project serves as a wrapper for the `Twitter premium and enterprise
-search
-APIs <https://developer.twitter.com/en/products/tweets/search>`__,
-providing a command-line utility and a Python library. Pretty docs can
-be seen `here <https://twitterdev.github.io/search-tweets-python/>`__.
+This project serves as a wrapper for the `Twitter Labs recent search
+APIs <https://developer.twitter.com/en/docs/labs/recent-search/>`__,
+providing a command-line utility and a Python library.
+
+This is a fork of the premium/enterprise search client at https://github.com/twitterdev/search-tweets-python
+
 
 Features
 ========
 
--  Supports 30-day Search and Full Archive Search (not the standard
-   Search API at this time).
+-  Supports Labs recent search, v2.
 -  Command-line utility is pipeable to other tools (e.g., ``jq``).
 -  Automatically handles pagination of search results with specifiable
    limits
 -  Delivers a stream of data to the user for low in-memory requirements
--  Handles enterprise and premium authentication methods
+-  Handles OAuth 2 authentication.
 -  Flexible usage within a python program
 -  Compatible with our group's `Tweet
    Parser <https://github.com/twitterdev/tweet_parser>`__ for rapid
@@ -44,20 +49,23 @@ Or you can install the development version locally via
 
 --------------
 
+
+------------------------------
+See https://github.com/twitterdev/search-tweets-python for more documentation.
+
+Below are excerpts of details that have changed:
+
+
+
 Credential Handling
 ===================
 
-The premium and enterprise Search APIs use different authentication
-methods and we attempt to provide a seamless way to handle
-authentication for all customers. We know credentials can be tricky or
-annoying - please read this in its entirety.
 
-Premium clients will require the ``bearer_token`` and ``endpoint``
-fields; Enterprise clients require ``username``, ``password``, and
-``endpoint``. If you do not specify the ``account_type``, we attempt to
-discern the account type and declare a warning about this behavior.
 
-For premium search products, we are using app-only authentication and
+Labs clients will require the ``bearer_token`` and ``endpoint``
+fields; 
+
+For Labs search, we are using app-only authentication and
 the bearer tokens are not delivered with an expiration time. You can
 provide either: - your application key and secret (the library will
 handle bearer-token authentication) - a bearer token that you get
@@ -67,7 +75,7 @@ Many developers might find providing your application key and secret
 more straightforward and letting this library manage your bearer token
 generation for you. Please see
 `here <https://developer.twitter.com/en/docs/basics/authentication/overview/application-only>`__
-for an overview of the premium authentication method.
+for an overview of the OAuth2 authentication method.
 
 We support both YAML-file based methods and environment variables for
 storing credentials, and provide flexible handling with sensible
@@ -82,7 +90,6 @@ this:
 .. code:: yaml
 
    search_tweets_api:
-     account_type: premium
      endpoint: <FULL_URL_OF_ENDPOINT>
      consumer_key: <CONSUMER_KEY>
      consumer_secret: <CONSUMER_SECRET>
@@ -93,7 +100,6 @@ this:
 .. code:: yaml
 
    search_tweets_api:
-     account_type: enterprise
      endpoint: <FULL_URL_OF_ENDPOINT>
      username: <USERNAME>
      password: <PW>
@@ -107,35 +113,6 @@ Both above examples require no special command-line arguments or
 in-program arguments. The credential parsing methods, unless otherwise
 specified, will look for a YAML key called ``search_tweets_api``.
 
-For developers who have multiple endpoints and/or search products, you
-can keep all credentials in the same file and specify specific keys to
-use. ``--credential-file-key`` specifies this behavior in the command
-line app. An example:
-
-.. code:: yaml
-
-   search_tweets_30_day_dev:
-     account_type: premium
-     endpoint: <FULL_URL_OF_ENDPOINT>
-     consumer_key: <KEY>
-     consumer_secret: <SECRET>
-     (optional) bearer_token: <TOKEN>
-
-
-   search_tweets_30_day_prod:
-     account_type: premium
-     endpoint: <FULL_URL_OF_ENDPOINT>
-     bearer_token: <TOKEN>
-
-   search_tweets_fullarchive_dev:
-     account_type: premium
-     endpoint: <FULL_URL_OF_ENDPOINT>
-     bearer_token: <TOKEN>
-
-   search_tweets_fullarchive_prod:
-     account_type: premium
-     endpoint: <FULL_URL_OF_ENDPOINT>
-     bearer_token: <TOKEN>
 
 Environment Variables
 ---------------------
@@ -146,89 +123,11 @@ can set the appropriate variables for your product of the following:
 ::
 
    export SEARCHTWEETS_ENDPOINT=
-   export SEARCHTWEETS_USERNAME=
-   export SEARCHTWEETS_PASSWORD=
    export SEARCHTWEETS_BEARER_TOKEN=
-   export SEARCHTWEETS_ACCOUNT_TYPE=
    export SEARCHTWEETS_CONSUMER_KEY=
    export SEARCHTWEETS_CONSUMER_SECRET=
 
-The ``load_credentials`` function will attempt to find these variables
-if it cannot load fields from the YAML file, and it will **overwrite any
-credentials from the YAML file that are present as environment
-variables** if they have been parsed. This behavior can be changed by
-setting the ``load_credentials`` parameter ``env_overwrite`` to
-``False``.
 
-The following cells demonstrates credential handling in the Python
-library.
-
-.. code:: python
-
-   from searchtweets import load_credentials
-
-.. code:: python
-
-   load_credentials(filename="./search_tweets_creds_example.yaml",
-                    yaml_key="search_tweets_ent_example",
-                    env_overwrite=False)
-
-::
-
-   {'username': '<MY_USERNAME>',
-    'password': '<MY_PASSWORD>',
-    'endpoint': '<MY_ENDPOINT>'}
-
-.. code:: python
-
-   load_credentials(filename="./search_tweets_creds_example.yaml",
-                    yaml_key="search_tweets_premium_example",
-                    env_overwrite=False)
-
-::
-
-   {'bearer_token': '<A_VERY_LONG_MAGIC_STRING>',
-    'endpoint': 'https://api.twitter.com/1.1/tweets/search/30day/dev.json',
-    'extra_headers_dict': None}
-
-Environment Variable Overrides
-------------------------------
-
-If we set our environment variables, the program will look for them
-regardless of a YAML file's validity or existence.
-
-.. code:: python
-
-   import os
-   os.environ["SEARCHTWEETS_USERNAME"] = "<ENV_USERNAME>"
-   os.environ["SEARCHTWEETS_PASSWORD"] = "<ENV_PW>"
-   os.environ["SEARCHTWEETS_ENDPOINT"] = "<https://endpoint>"
-
-   load_credentials(filename="nothing_here.yaml", yaml_key="no_key_here")
-
-::
-
-   cannot read file nothing_here.yaml
-   Error parsing YAML file; searching for valid environment variables
-
-::
-
-   {'username': '<ENV_USERNAME>',
-    'password': '<ENV_PW>',
-    'endpoint': '<https://endpoint>'}
-
-Command-line app
-----------------
-
-the flags:
-
--  ``--credential-file <FILENAME>``
--  ``--credential-file-key <KEY>``
--  ``--env-overwrite``
-
-are used to control credential behavior from the command-line app.
-
---------------
 
 Using the Comand Line Application
 =================================
@@ -239,7 +138,7 @@ rapid access to Tweets. When you use ``pip`` to install this package,
 ``tools/`` directory for those who want to run it locally.
 
 Note that the ``--results-per-call`` flag specifies an argument to the
-API ( ``maxResults``, results returned per CALL), not as a hard max to
+API ( ``max_results``, results returned per CALL), not as a hard max to
 number of results returned from this program. The argument
 ``--max-results`` defines the maximum number of results to return from a
 given call. All examples assume that your credentials are set up
@@ -251,9 +150,9 @@ environment variables.
 .. code:: bash
 
    search_tweets.py \
-     --max-results 1000 \
+     --max-tweets 1000 \
      --results-per-call 100 \
-     --filter-rule "beyonce has:hashtags" \
+     --query "beyonce has:hashtags" \
      --print-stream
 
 **Stream json results to stdout and save to a file**
@@ -261,9 +160,9 @@ environment variables.
 .. code:: bash
 
    search_tweets.py \
-     --max-results 1000 \
+     --max-tweets 1000 \
      --results-per-call 100 \
-     --filter-rule "beyonce has:hashtags" \
+     --query "beyonce has:hashtags" \
      --filename-prefix beyonce_geo \
      --print-stream
 
@@ -272,9 +171,9 @@ environment variables.
 .. code:: bash
 
    search_tweets.py \
-     --max-results 100 \
+     --max-tweets 1000 \
      --results-per-call 100 \
-     --filter-rule "beyonce has:hashtags" \
+     --query "beyonce has:hashtags" \
      --filename-prefix beyonce_geo \
      --no-print-stream
 
@@ -285,7 +184,7 @@ representing a dictionary of extra headers:
 .. code:: bash
 
    search_tweets.py \
-     --filter-rule "beyonce has:hashtags" \
+     --query "beyonce has:hashtags" \
      --extra-headers '{"<MY_HEADER_KEY>":"<MY_HEADER_VALUE>"}'
 
 Options can be passed via a configuration file (either ini or YAML).
@@ -295,27 +194,27 @@ Example files can be found in the ``tools/api_config_example.config`` or
 .. code:: bash
 
    [search_rules]
-   from_date = 2017-06-01
-   to_date = 2017-09-01
-   pt_rule = beyonce has:geo
+   start_time = 2017-06-01
+   end_time = 2017-09-01
+   query = beyonce has:geo
 
    [search_params]
-   results_per_call = 500
-   max_results = 500
+   results_per_call = 100
+   max_tweets = 5000
 
    [output_params]
    save_file = True
    filename_prefix = beyonce
-   results_per_file = 10000000
+   results_per_file = 100000
 
 Or this:
 
 .. code:: yaml
 
    search_rules:
-       from-date: 2017-06-01
-       to-date: 2017-09-01 01:01
-       pt-rule: kanye
+       start-time: 2017-06-01
+       end-time: 2017-09-01 01:01
+       query: kanye
 
    search_params:
        results-per-call: 500
@@ -332,10 +231,7 @@ credentials key:
 .. code:: yaml
 
    search_tweets_api:
-     account_type: premium
      endpoint: <FULL_URL_OF_ENDPOINT>
-     username: <USERNAME>
-     password: <PW>
      extra_headers:
        <MY_HEADER_KEY>: <MY_HEADER_VALUE>
 
@@ -364,12 +260,10 @@ Full options are listed below:
                          [--credential-file-key CREDENTIAL_YAML_KEY]
                          [--env-overwrite ENV_OVERWRITE]
                          [--config-file CONFIG_FILENAME]
-                         [--account-type {premium,enterprise}]
-                         [--count-bucket COUNT_BUCKET]
-                         [--start-datetime FROM_DATE] [--end-datetime TO_DATE]
-                         [--filter-rule PT_RULE]
+                         [--start-time START_TIME] [--end-time END_TIME]
+                         [--query QUERY]
                          [--results-per-call RESULTS_PER_CALL]
-                         [--max-results MAX_RESULTS] [--max-pages MAX_PAGES]
+                         [--max-tweets MAX_TWEETS] [--max-pages MAX_PAGES]
                          [--results-per-file RESULTS_PER_FILE]
                          [--filename-prefix FILENAME_PREFIX]
                          [--no-print-stream] [--print-stream]
@@ -398,19 +292,18 @@ Full options are listed below:
      --count-bucket COUNT_BUCKET
                            Bucket size for counts API. Options:, day, hour,
                            minute (default is 'day').
-     --start-datetime FROM_DATE
-                           Start of datetime window, format 'YYYY-mm-DDTHH:MM'
-                           (default: -30 days)
-     --end-datetime TO_DATE
-                           End of datetime window, format 'YYYY-mm-DDTHH:MM'
-                           (default: most recent date)
-     --filter-rule PT_RULE
-                           PowerTrack filter rule (See: http://support.gnip.com/c
-                           ustomer/portal/articles/901152-powertrack-operators)
+     --start-time START_TIME
+                           Start of datetime window, format 'YYYY-mm-DDTHH:MM:SSZ'
+                           (default: -7 days)
+     --end-time END_TIME
+                           End of datetime window, format 'YYYY-mm-DDTHH:MM:SSZ'
+                           (default: now, most recent date)
+     --query QUERY
+                           Query (See: https://developer.twitter.com/en/docs/labs/recent-search/guides/search-queries)
      --results-per-call RESULTS_PER_CALL
                            Number of results to return per call (default 100; max
-                           500) - corresponds to 'maxResults' in the API
-     --max-results MAX_RESULTS
+                           500) - corresponds to 'max_results' in the API
+     --max-tweets MAX_TWEETS
                            Maximum number of Tweets or Counts to return for this
                            session (defaults to 500)
      --max-pages MAX_PAGES
@@ -441,7 +334,7 @@ We'll assume that credentials are in the default location,
 
 .. code:: python
 
-   from searchtweets import ResultStream, gen_rule_payload, load_credentials
+   from searchtweets import ResultStream, gen_request_parameters, load_credentials
 
 Enterprise setup
 ----------------
@@ -462,7 +355,7 @@ Premium Setup
                                           env_overwrite=False)
 
 There is a function that formats search API rules into valid json
-queries called ``gen_rule_payload``. It has sensible defaults, such as
+queries called ``gen_request_parameters``. It has sensible defaults, such as
 pulling more Tweets per call than the default 100 (but note that a
 sandbox environment can only have a max of 100 here, so if you get
 errors, please check this) not including dates, and defaulting to hourly
@@ -473,12 +366,12 @@ what a rule looks like.
 
 .. code:: python
 
-   rule = gen_rule_payload("beyonce", results_per_call=100) # testing with a sandbox account
+   rule = gen_request_parameters("beyonce", results_per_call=100) # testing with a sandbox account
    print(rule)
 
 ::
 
-   {"query":"beyonce","maxResults":100}
+   {"query":"beyonce","max_results":100}
 
 This rule will match tweets that have the text ``beyonce`` in them.
 
@@ -598,7 +491,7 @@ stop on number of pages to limit your API call usage.
 
 .. code:: python
 
-   rs = ResultStream(rule_payload=rule,
+   rs = ResultStream(request_parameters=rule,
                      max_results=500,
                      max_pages=1,
                      **premium_search_args)
@@ -611,12 +504,12 @@ stop on number of pages to limit your API call usage.
    	{
        "username":null,
        "endpoint":"https:\/\/api.twitter.com\/1.1\/tweets\/search\/30day\/dev.json",
-       "rule_payload":{
+       "request_parameters":{
            "query":"beyonce",
-           "maxResults":100
+           "max_results":100
        },
        "tweetify":true,
-       "max_results":500
+       "max_tweets":500
    }
 
 There is a function, ``.stream``, that seamlessly handles requests and
@@ -669,7 +562,7 @@ API counts endpoint.*
 
 .. code:: python
 
-   count_rule = gen_rule_payload("beyonce", count_bucket="day")
+   count_rule = gen_request_parameters("beyonce", count_bucket="day")
 
    counts = collect_results(count_rule, result_stream_args=enterprise_search_args)
 
@@ -723,7 +616,7 @@ method; please see your developer console for details.
 
 Let's make a new rule and pass it dates this time.
 
-``gen_rule_payload`` takes timestamps of the following forms:
+``gen_request_parameters`` takes timestamps of the following forms:
 
 -  ``YYYYmmDDHHMM``
 -  ``YYYY-mm-DD`` (which will convert to midnight UTC (00:00)
@@ -734,7 +627,7 @@ Note - all Tweets are stored in UTC time.
 
 .. code:: python
 
-   rule = gen_rule_payload("from:jack",
+   rule = gen_request_parameters("from:jack",
                            from_date="2017-09-01", #UTC 2017-09-01 00:00
                            to_date="2017-10-30",#UTC 2017-10-30 00:00
                            results_per_call=500)
@@ -742,7 +635,7 @@ Note - all Tweets are stored in UTC time.
 
 ::
 
-   {"query":"from:jack","maxResults":500,"toDate":"201710300000","fromDate":"201709010000"}
+   {"query":"from:jack","max_results":500,"start_time":"201710300000","end_time":"201709010000"}
 
 .. code:: python
 
@@ -771,7 +664,7 @@ Note - all Tweets are stored in UTC time.
 
 .. code:: python
 
-   rule = gen_rule_payload("from:jack",
+   rule = gen_request_parameters("from:jack",
                            from_date="2017-09-20",
                            to_date="2017-10-30",
                            count_bucket="day",
@@ -780,11 +673,11 @@ Note - all Tweets are stored in UTC time.
 
 ::
 
-   {"query":"from:jack","toDate":"201710300000","fromDate":"201709200000","bucket":"day"}
+   {"query":"from:jack","start_time":"201710300000","end_time":"201709200000","bucket":"day"}
 
 .. code:: python
 
-   counts = collect_results(rule, max_results=500, result_stream_args=enterprise_search_args)
+   counts = collect_results(rule, max_results=100, result_stream_args=enterprise_search_args)
 
 .. code:: python
 
