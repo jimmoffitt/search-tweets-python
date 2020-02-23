@@ -1,13 +1,13 @@
 
-Working with the API within a Python program is straightforward both for
-Premium and Enterprise clients.
+
+Working with the API within a Python program is straightforward.
 
 We'll assume that credentials are in the default location,
 ``~/.twitter_keys.yaml``.
 
 .. code:: ipython3
 
-    from searchtweets import ResultStream, gen_rule_payload, load_credentials
+    from searchtweets import ResultStream, gen_request_parameters, load_credentials
 
 Enterprise setup
 ----------------
@@ -28,7 +28,7 @@ Premium Setup
                                            env_overwrite=False)
 
 There is a function that formats search API rules into valid json
-queries called ``gen_rule_payload``. It has sensible defaults, such as
+queries called ``gen_request_parameters``. It has sensible defaults, such as
 pulling more Tweets per call than the default 100 (but note that a
 sandbox environment can only have a max of 100 here, so if you get
 errors, please check this) not including dates, and defaulting to hourly
@@ -39,13 +39,13 @@ what a rule looks like.
 
 .. code:: ipython3
 
-    rule = gen_rule_payload("beyonce", results_per_call=100) # testing with a sandbox account
+    rule = gen_request_parameters("beyonce", results_per_call=100) # testing with a sandbox account
     print(rule)
 
 
 ::
 
-    {"query":"beyonce","maxResults":100}
+    {"query":"beyonce","max_results":100}
 
 
 This rule will match tweets that have the text ``beyonce`` in them.
@@ -174,7 +174,7 @@ stop on number of pages to limit your API call usage.
 
 .. code:: ipython3
 
-    rs = ResultStream(rule_payload=rule,
+    rs = ResultStream(request_parameters=rule,
                       max_results=500,
                       max_pages=1,
                       **premium_search_args)
@@ -188,9 +188,9 @@ stop on number of pages to limit your API call usage.
     	{
         "username":null,
         "endpoint":"https:\/\/api.twitter.com\/1.1\/tweets\/search\/30day\/dev.json",
-        "rule_payload":{
+        "request_parameters":{
             "query":"beyonce",
-            "maxResults":100
+            "max_results":100
         },
         "tweetify":true,
         "max_results":500
@@ -249,7 +249,7 @@ API counts endpoint.*
 
 .. code:: ipython3
 
-    count_rule = gen_rule_payload("beyonce", count_bucket="day")
+    count_rule = gen_request_parameters("beyonce", count_bucket="day")
     
     counts = collect_results(count_rule, result_stream_args=enterprise_search_args)
 
@@ -308,7 +308,7 @@ method; please see your developer console for details.
 
 Let's make a new rule and pass it dates this time.
 
-``gen_rule_payload`` takes timestamps of the following forms:
+``gen_request_parameters`` takes timestamps of the following forms:
 
 -  ``YYYYmmDDHHMM``
 -  ``YYYY-mm-DD`` (which will convert to midnight UTC (00:00)
@@ -319,7 +319,7 @@ Note - all Tweets are stored in UTC time.
 
 .. code:: ipython3
 
-    rule = gen_rule_payload("from:jack",
+    rule = gen_request_parameters("from:jack",
                             from_date="2017-09-01", #UTC 2017-09-01 00:00
                             to_date="2017-10-30",#UTC 2017-10-30 00:00
                             results_per_call=500)
@@ -328,7 +328,7 @@ Note - all Tweets are stored in UTC time.
 
 ::
 
-    {"query":"from:jack","maxResults":500,"toDate":"201710300000","fromDate":"201709010000"}
+    {"query":"from:jack","max_results":500,"start_time":"201710300000","end_time":"201709010000"}
 
 
 .. code:: ipython3
@@ -360,7 +360,7 @@ Note - all Tweets are stored in UTC time.
 
 .. code:: ipython3
 
-    rule = gen_rule_payload("from:jack",
+    rule = gen_request_parameters("from:jack",
                             from_date="2017-09-20",
                             to_date="2017-10-30",
                             count_bucket="day",
@@ -370,7 +370,7 @@ Note - all Tweets are stored in UTC time.
 
 ::
 
-    {"query":"from:jack","toDate":"201710300000","fromDate":"201709200000","bucket":"day"}
+    {"query":"from:jack","start_time":"201710300000","end_time":"201709200000","bucket":"day"}
 
 
 .. code:: ipython3
