@@ -20,7 +20,7 @@ logger = logging.getLogger()
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "ERROR"))
 
 
-REQUIRED_KEYS = {"pt_rule", "endpoint"}
+REQUIRED_KEYS = {"query", "endpoint"}
 
 
 def parse_cmd_args():
@@ -57,45 +57,56 @@ def parse_cmd_args():
                            default=None,
                            help=help_msg)
 
-    argparser.add_argument("--account-type",
-                           dest="account_type",
+    argparser.add_argument("--api_version",
+                           dest="api_version",
                            default=None,
-                           choices=["premium", "enterprise"],
-                           help="The account type you are using")
+                           choices=["labs_v2"],
+                           help="The API version you are using")
 
-    argparser.add_argument("--count-bucket",
-                           dest="count_bucket",
-                           default=None,
-                           help=("""Bucket size for counts API. Options:,
-                                 day, hour, minute (default is 'day')."""))
+    #TODO: count details. Not supported in Labs, needed for next version.
+    # argparser.add_argument("--count-bucket",
+    #                        dest="count_bucket",
+    #                        default=None,
+    #                        help=("""Bucket size for counts API. Options:,
+    #                              day, hour, minute (default is 'day')."""))
 
-    argparser.add_argument("--start-datetime",
-                           dest="from_date",
+    argparser.add_argument("--start-time",
+                           dest="start_time",
                            default=None,
                            help="""Start of datetime window, format
-                                'YYYY-mm-DDTHH:MM' (default: -30 days)""")
+                                'YYYY-mm-DDTHH:MM' (default: -7 days)""")
 
-    argparser.add_argument("--end-datetime",
-                           dest="to_date",
+    argparser.add_argument("--end-time",
+                           dest="end_time",
                            default=None,
                            help="""End of datetime window, format
                                  'YYYY-mm-DDTHH:MM' (default: most recent
                                  date)""")
 
-    argparser.add_argument("--filter-rule",
-                           dest="pt_rule",
+    argparser.add_argument("--query",
+                           dest="query",
                            default=None,
-                           help="PowerTrack filter rule (See: http://support.gnip.com/customer/portal/articles/901152-powertrack-operators)")
+                           help="Search query. (See: https://developer.twitter.com/en/docs/labs/recent-search/guides/search-queries)")
+
+    argparser.add_argument("--since-id",
+                       dest="since_id",
+                       default=None,
+                       help="Tweet ID, will start search from Tweets after this one. (See: https://developer.twitter.com/en/docs/labs/recent-search/guides/pagination)")
+
+    argparser.add_argument("--until-id",
+                           dest="until_id",
+                           default=None,
+                           help="Tweet ID, will end search from Tweets before this one. (See: https://developer.twitter.com/en/docs/labs/recent-search/guides/pagination)")
 
     argparser.add_argument("--results-per-call",
                            dest="results_per_call",
                            help="Number of results to return per call "
-                                "(default 100; max 500) - corresponds to "
-                                "'maxResults' in the API")
+                                "(default 10; max 100) - corresponds to "
+                                "'max_results' in the API")
 
-    argparser.add_argument("--max-results", dest="max_results",
+    argparser.add_argument("--max-tweets", dest="max_tweets",
                            type=int,
-                           help="Maximum number of Tweets or Counts to return for this session")
+                           help="Maximum number of Tweets to return for this session")
 
     argparser.add_argument("--max-pages",
                            dest="max_pages",
@@ -165,7 +176,7 @@ def main():
     logger.debug(json.dumps(_filter_sensitive_args(configfile_dict), indent=4))
 
     creds_dict = load_credentials(filename=args_dict["credential_file"],
-                                  account_type=args_dict["account_type"],
+                                  api_version=args_dict["api_version"],
                                   yaml_key=args_dict["credential_yaml_key"],
                                   env_overwrite=args_dict["env_overwrite"])
 
