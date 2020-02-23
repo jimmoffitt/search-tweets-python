@@ -45,11 +45,8 @@ def _load_yaml_credentials(filename=None, yaml_key=None):
 
 def _load_env_credentials():
     vars_ = ["SEARCHTWEETS_ENDPOINT",
-             "SEARCHTWEETS_ACCOUNT",
-             "SEARCHTWEETS_USERNAME",
-             "SEARCHTWEETS_PASSWORD",
+             "SEARCHTWEETS_APIVERSION",
              "SEARCHTWEETS_BEARER_TOKEN",
-             "SEARCHTWEETS_ACCOUNT_TYPE",
              "SEARCHTWEETS_CONSUMER_KEY",
              "SEARCHTWEETS_CONSUMER_SECRET"
              ]
@@ -60,29 +57,29 @@ def _load_env_credentials():
     return parsed
 
 
-def _parse_credentials(search_creds, account_type):
+def _parse_credentials(search_creds, api_version):
 
-    if account_type is None:
-        account_type = search_creds.get("account_type", None)
+    if api_version is None:
+        api_version = search_creds.get("api_version", None)
         # attempt to infer account type
-        if account_type is None:
-            if search_creds.get("bearer_token") is not None:
-                account_type = "premium"
-            elif search_creds.get("password") is not None:
-                account_type = "enterprise"
+        if api_version is None:
+            if '/labs/1/' in search_creds.get("endpoint"):
+                api_version = "1"
+            elif '/labs/2/' in search_creds.get("endpoint"):
+                api_version = "2"
             else:
                 pass
 
-    if account_type not in {"premium", "enterprise"}:
-        msg = """Account type is not specified and cannot be inferred.
+    if api_version not in {"labs_v1", "labs_v2"}:
+        msg = """API version is not specified and cannot be inferred.
         Please check your credential file, arguments, or environment variables
-        for issues. The account type must be 'premium' or 'enterprise'.
+        for issues. Available API versions includes: labs_v1, labs_v2'.
         """
         logger.error(msg)
         raise KeyError
 
     try:
-        if account_type == "premium":
+        if 'labs' in api_version:
             if "bearer_token" not in search_creds:
                 if "consumer_key" in search_creds \
                   and "consumer_secret" in search_creds:
@@ -94,10 +91,7 @@ def _parse_credentials(search_creds, account_type):
                 "bearer_token": search_creds["bearer_token"],
                 "endpoint": search_creds["endpoint"],
                 "extra_headers_dict": search_creds.get("extra_headers",None)}
-        if account_type == "enterprise":
-            search_args = {"username": search_creds["username"],
-                           "password": search_creds["password"],
-                           "endpoint": search_creds["endpoint"]}
+
     except KeyError:
         logger.error("Your credentials are not configured correctly and "
                      " you are missing a required field. Please see the "
@@ -107,7 +101,7 @@ def _parse_credentials(search_creds, account_type):
     return search_args
 
 
-def load_credentials(filename=None, account_type=None,
+def load_credentials(filename=None, api_version=None,
                      yaml_key=None, env_overwrite=True):
     """
     Handles credential management. Supports both YAML files and environment
@@ -118,12 +112,10 @@ def load_credentials(filename=None, account_type=None,
 
         <KEY>:
           endpoint: <FULL_URL_OF_ENDPOINT>
-          username: <USERNAME>
-          password: <PW>
           consumer_key: <KEY>
           consumer_secret: <SECRET>
           bearer_token: <TOKEN>
-          account_type: <enterprise OR premium>
+          api_version: <labs v1 or v2>
           extra_headers: 
             <MY_HEADER_KEY>: <MY_HEADER_VALUE>
 
@@ -136,10 +128,8 @@ def load_credentials(filename=None, account_type=None,
     .. code: yaml
 
         SEARCHTWEETS_ENDPOINT
-        SEARCHTWEETS_USERNAME
-        SEARCHTWEETS_PASSWORD
         SEARCHTWEETS_BEARER_TOKEN
-        SEARCHTWEETS_ACCOUNT_TYPE
+        SEARCHTWEETS_API_VERSION
         ...
 
     Again, set the variables that correspond to your account information and
@@ -149,8 +139,8 @@ def load_credentials(filename=None, account_type=None,
     Args:
         filename (str): pass a filename here if you do not want to use the
                         default ``~/.twitter_keys.yaml``
-        account_type (str): your account type, "premium" or "enterprise". We
-            will attempt to infer the account info if left empty.
+        api_version (str): API version, "labs_v1" or "labs_v2". We
+            will attempt to infer the version info if left empty.
         yaml_key (str): the top-level key in the YAML file that has your
             information. Defaults to ``search_tweets_api``.
         env_overwrite: any found environment variables will overwrite values
@@ -161,18 +151,14 @@ def load_credentials(filename=None, account_type=None,
 
     Example:
         >>> from searchtweets.api_utils import load_credentials
-        >>> search_args = load_credentials(account_type="premium",
+        >>> search_args = load_credentials(api_version="labs_v2",
                 env_overwrite=False)
         >>> search_args.keys()
         dict_keys(['bearer_token', 'endpoint'])
         >>> import os
         >>> os.environ["SEARCHTWEETS_ENDPOINT"] = "https://endpoint"
-        >>> os.environ["SEARCHTWEETS_USERNAME"] = "areallybadpassword"
-        >>> os.environ["SEARCHTWEETS_PASSWORD"] = "<PW>"
         >>> load_credentials()
-        {'endpoint': 'https://endpoint',
-         'password': '<PW>',
-         'username': 'areallybadpassword'}
+        {'endpoint': 'https://endpoint'}
 
     """
     yaml_key = yaml_key if yaml_key is not None else "search_tweets_api"
@@ -186,7 +172,7 @@ def load_credentials(filename=None, account_type=None,
     merged_vars = (merge_dicts(yaml_vars, env_vars)
                    if env_overwrite
                    else merge_dicts(env_vars, yaml_vars))
-    parsed_vars = _parse_credentials(merged_vars, account_type=account_type)
+    parsed_vars = _parse_credentials(merged_vars, api_version=api_version)
     return parsed_vars
 
 
@@ -204,3 +190,4 @@ def _generate_bearer_token(consumer_key, consumer_secret):
         resp.raise_for_status()
 
     return resp.json()['access_token']
+
