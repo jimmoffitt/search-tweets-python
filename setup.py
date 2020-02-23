@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2018 Twitter, Inc.
+# Copyright 2020 Twitter, Inc.
 # Licensed under the MIT License
 # https://opensource.org/licenses/MIT
 import re
@@ -23,7 +23,7 @@ with open("./searchtweets/_version.py") as f:
     VERSION = parse_version(_version_line)
 
 setup(name='searchtweets',
-      description="Wrapper for Twitter's Premium and Enterprise search APIs",
+      description="Wrapper for Twitter Developer Labs recent search endpoint.",
       url='https://github.com/twitterdev/search-tweets-python',
       author='Fiona Pigott, Jeff Kolb, Josh Montague, Aaron Gonzales',
       long_description=open('README.rst', 'r', encoding="utf-8").read(),
