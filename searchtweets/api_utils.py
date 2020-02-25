@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2020 Twitter, Inc.
+# Copyright 2018 Twitter, Inc.
 # Licensed under the MIT License
 # https://opensource.org/licenses/MIT
 """
@@ -67,7 +67,7 @@ def convert_utc_time(datetime_str):
             _date = datetime.datetime.strptime(datetime_str, "%Y-%m-%d %H:%M")
         except ValueError:
             _date = datetime.datetime.strptime(datetime_str, "%Y-%m-%d")
-    return _date.strftime("%Y-%m-%d %H:%M:%S")
+    return _date.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def change_to_count_endpoint(endpoint):
@@ -91,7 +91,7 @@ def change_to_count_endpoint(endpoint):
 
 
 def gen_request_parameters(query, results_per_call=None,
-                           start_time=None, end_time=None,
+                           start_time=None, end_time=None, since_id=None, until_id=None,
                            stringify=True):
 
     """
@@ -128,6 +128,10 @@ def gen_request_parameters(query, results_per_call=None,
         payload["start_time"] = convert_utc_time(start_time)
     if end_time:
         payload["end_time"] = convert_utc_time(end_time)
+    if since_id:
+        payload["since_id"] = since_id
+    if until_id:
+        payload["until_id"] = until_id
     #TODO: Not needed for Labs, but useful for vNext.
     # if count_bucket:
     #     if set(["day", "hour", "minute"]) & set([count_bucket]):
@@ -169,6 +173,8 @@ def gen_params_from_config(config_dict):
     query = gen_request_parameters(query=config_dict["query"],
                             start_time=config_dict.get("start_time", None),
                             end_time=config_dict.get("end_time", None),
+                            since_id=config_dict.get("since_id", None),
+                            until_id=config_dict.get("until_id", None),
                             results_per_call=results_per_call)
                             #count_bucket=config_dict.get("count_bucket", None))
 
@@ -209,3 +215,4 @@ def validate_count_api(request_parameters, endpoint):
                    Please check your endpoints and try again""")
             logger.error(msg)
             raise ValueError
+
