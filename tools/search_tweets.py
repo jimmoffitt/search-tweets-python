@@ -152,7 +152,7 @@ def parse_cmd_args():
 
 
 def _filter_sensitive_args(dict_):
-    sens_args = ("password", "consumer_key", "consumer_secret", "bearer_token")
+    sens_args = ("consumer_key", "consumer_secret", "bearer_token")
     return {k: v for k, v in dict_.items() if k not in sens_args}
 
 def main():
@@ -186,7 +186,7 @@ def main():
                               dict_filter(creds_dict),
                               dict_filter(args_dict))
 
-    logger.debug("combined dict (cli, config, creds) sans password:")
+    logger.debug("combined dict (cli, config, creds):")
     logger.debug(json.dumps(_filter_sensitive_args(config_dict), indent=4))
 
     if len(dict_filter(config_dict).keys() & REQUIRED_KEYS) < len(REQUIRED_KEYS):
