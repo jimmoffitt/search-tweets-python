@@ -46,6 +46,9 @@ def make_session(bearer_token=None, extra_headers_dict=None):
     session.trust_env = False
     headers = {'Accept-encoding': 'gzip',
                'User-Agent': 'twitterdev-search-tweets-python-labs/' + VERSION}
+
+    #Labs: TODO: add back in consumer token support.
+
     if bearer_token:
         logger.info("using bearer token for authentication")
         headers['Authorization'] = "Bearer {}".format(bearer_token)
@@ -98,9 +101,10 @@ def retry(func):
                 print( "Request rate limit hit...")
             else:
                 print(f"Error code: {resp.status_code}")
-                error_message = resp.json()["error"]["message"]
-                logger.error("HTTP Error code: {}: {}".format(resp.status_code, error_message))
-                logger.error("Rule payload: {}".format(kwargs["request_parameters"]))
+                print(f"Error message: {resp.text}")
+                # error_message = resp.json()["error"]["message"]
+                # logger.error("HTTP Error code: {}: {}".format(resp.status_code, error_message))
+                # logger.error("Rule payload: {}".format(kwargs["request_parameters"]))
                 raise requests.exceptions.HTTPError
 
         return resp
@@ -130,8 +134,10 @@ def request(session, url, request_parameters, **kwargs):
     #HANDLE LABS REQUEST PARAMETERS --> GET URL
     #print(urlencode(request_json))
 
+    request_url = urlencode(request_json)
+
     #TODO: new Labs-specific code in support of GET requests. Will need to URL encode too.
-    url = f"{url}?query={request_json['query']}"
+    url = f"{url}?{request_url}"
 
     result = session.get(url, **kwargs)
     return result
@@ -320,3 +326,4 @@ def collect_results(query, max_tweets=500, result_stream_args=None):
                       max_tweets=max_tweets,
                       **result_stream_args)
     return list(rs.stream())
+
