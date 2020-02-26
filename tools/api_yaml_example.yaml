@@ -1,13 +1,13 @@
 search_rules:
-    from-date: 2017-06-01
-    to-date: 2017-09-01 01:01
-    pt-rule: kanye
+    from-date: 2020-01-06
+    to-date: 2020-01-10
+    query: snow colorado -is:retweet has:media
 
 search_params:
-    results-per-call: 500
-    max-results: 500
+    results-per-call: 100
+    max-tweets: 10000
 
 output_params:
     save_file: True
-    filename_prefix: kanye
-    results_per_file: 10000000
+    filename_prefix: snow-photos
+    results_per_file: 100000
