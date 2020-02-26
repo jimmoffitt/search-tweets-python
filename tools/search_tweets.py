@@ -106,7 +106,7 @@ def parse_cmd_args():
 
     argparser.add_argument("--max-tweets", dest="max_tweets",
                            type=int,
-                           help="Maximum number of Tweets to return for this session")
+                           help="Maximum number of Tweets to return for this session of requests.")
 
     argparser.add_argument("--max-pages",
                            dest="max_pages",
