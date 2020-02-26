@@ -1,6 +1,6 @@
 search_rules:
-    from-date: 2020-01-06
-    to-date: 2020-01-10
+    start-time: 2020-01-06
+    end-time: 2020-01-10
     query: snow colorado -is:retweet has:media
 
 search_params:
