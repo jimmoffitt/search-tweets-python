@@ -76,8 +76,6 @@ optional arguments:
                         file is found, all args will be populated, from there.
                         Remaining command-line args, will overrule args found
                         in the config, file.
-  --api_version {labs_v2}
-                        The API version you are using
   --start-time START_TIME
                         Start of datetime window, format 'YYYY-mm-DDTHH:MM'
                         (default: -7 days)
