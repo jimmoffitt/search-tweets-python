@@ -326,4 +326,3 @@ def collect_results(query, max_tweets=500, result_stream_args=None):
                       max_tweets=max_tweets,
                       **result_stream_args)
     return list(rs.stream())
-
