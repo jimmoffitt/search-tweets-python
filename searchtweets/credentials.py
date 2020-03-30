@@ -45,7 +45,6 @@ def _load_yaml_credentials(filename=None, yaml_key=None):
 
 def _load_env_credentials():
     vars_ = ["SEARCHTWEETS_ENDPOINT",
-             "SEARCHTWEETS_APIVERSION",
              "SEARCHTWEETS_BEARER_TOKEN",
              "SEARCHTWEETS_CONSUMER_KEY",
              "SEARCHTWEETS_CONSUMER_SECRET"
@@ -57,40 +56,42 @@ def _load_env_credentials():
     return parsed
 
 
-def _parse_credentials(search_creds, api_version):
+def _parse_credentials(search_creds, api_version=None):
 
-    if api_version is None:
-        api_version = search_creds.get("api_version", None)
-        # attempt to infer account type
-        if api_version is None:
-            if '/labs/1/' in search_creds.get("endpoint"):
-                api_version = "1"
-            elif '/labs/2/' in search_creds.get("endpoint"):
-                api_version = "2"
-            else:
-                pass
+    #TODO: Need this version code?
+    # if api_version is None:
+    #     api_version = search_creds.get("api_version", None)
+    #     # attempt to infer account type
+    #     if api_version is None:
+    #         if '/labs/1/' in search_creds.get("endpoint"):
+    #             api_version = "1"
+    #         elif '/labs/2/' in search_creds.get("endpoint"):
+    #             api_version = "2"
+    #         else:
+    #             pass
 
-    if api_version not in {"labs_v1", "labs_v2"}:
-        msg = """API version is not specified and cannot be inferred.
-        Please check your credential file, arguments, or environment variables
-        for issues. Available API versions includes: labs_v1, labs_v2'.
-        """
-        logger.error(msg)
-        raise KeyError
+    #TODO: not requiring Labs version number?
+    # if api_version not in {"labs_v1", "labs_v2"}:
+    #     msg = """API version is not specified and cannot be inferred.
+    #     Please check your credential file, arguments, or environment variables
+    #     for issues. Available API versions includes: labs_v1, labs_v2'.
+    #     """
+    #     logger.error(msg)
+    #     raise KeyError
 
     try:
-        if 'labs' in api_version:
-            if "bearer_token" not in search_creds:
-                if "consumer_key" in search_creds \
-                  and "consumer_secret" in search_creds:
-                    search_creds["bearer_token"] = _generate_bearer_token(
-                        search_creds["consumer_key"],
-                        search_creds["consumer_secret"])
 
-            search_args = {
-                "bearer_token": search_creds["bearer_token"],
-                "endpoint": search_creds["endpoint"],
-                "extra_headers_dict": search_creds.get("extra_headers",None)}
+        if "bearer_token" not in search_creds:
+            if "consumer_key" in search_creds \
+              and "consumer_secret" in search_creds:
+                search_creds["bearer_token"] = _generate_bearer_token(
+                    search_creds["consumer_key"],
+                    search_creds["consumer_secret"])
+
+        search_args = {
+            "bearer_token": search_creds["bearer_token"],
+            "endpoint": search_creds["endpoint"],
+            "extra_headers_dict": search_creds.get("extra_headers",None)}
 
     except KeyError:
         logger.error("Your credentials are not configured correctly and "
@@ -100,8 +101,7 @@ def _parse_credentials(search_creds, api_version):
 
     return search_args
 
-
-def load_credentials(filename=None, api_version=None,
+def load_credentials(filename=None,
                      yaml_key=None, env_overwrite=True):
     """
     Handles credential management. Supports both YAML files and environment
@@ -115,7 +115,6 @@ def load_credentials(filename=None, api_version=None,
           consumer_key: <KEY>
           consumer_secret: <SECRET>
           bearer_token: <TOKEN>
-          api_version: <labs v1 or v2>
           extra_headers: 
             <MY_HEADER_KEY>: <MY_HEADER_VALUE>
 
@@ -151,8 +150,7 @@ def load_credentials(filename=None, api_version=None,
 
     Example:
         >>> from searchtweets.api_utils import load_credentials
-        >>> search_args = load_credentials(api_version="labs_v2",
-                env_overwrite=False)
+        >>> search_args = load_credentials(env_overwrite=False)
         >>> search_args.keys()
         dict_keys(['bearer_token', 'endpoint'])
         >>> import os
@@ -172,7 +170,7 @@ def load_credentials(filename=None, api_version=None,
     merged_vars = (merge_dicts(yaml_vars, env_vars)
                    if env_overwrite
                    else merge_dicts(env_vars, yaml_vars))
-    parsed_vars = _parse_credentials(merged_vars, api_version=api_version)
+    parsed_vars = _parse_credentials(merged_vars)
     return parsed_vars
 
 
