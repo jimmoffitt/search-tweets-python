@@ -60,7 +60,12 @@ def make_session(bearer_token=None, extra_headers_dict=None):
 
 def retry(func):
     """
-    Decorator to handle API retries and exceptions. Defaults to three retries.
+    Decorator to handle API retries and exceptions. Defaults to five retries.
+
+    Rate-limit (429) and server-side errors (5XX) implement a retry design.
+    Other 4XX errors are a 'one and done' type error.
+
+    Retries implement an exponential backoff...
 
     Args:
         func (function): function for decoration
@@ -70,8 +75,11 @@ def retry(func):
 
     """
     def retried_func(*args, **kwargs):
-        max_tries = 3
+        max_tries = 10
         tries = 0
+        sleep_seconds = 0
+        total_sleep_seconds = 0
+
         while True:
             try:
                 resp = func(*args, **kwargs)
@@ -85,27 +93,35 @@ def retry(func):
                 raise exc
 
             if resp.status_code != 200 and tries < max_tries:
-                logger.warning("retrying request; current status code: {}"
-                               .format(resp.status_code))
+
                 tries += 1
+
+                logger.error(f"HTTP Error code: {resp.status_code}: {resp.text}")
+                logger.error(f"Rule payload: {kwargs['request_parameters']}")
+
+                if resp.status_code == 429:
+                    logger.warning("Rate limit hit... Will retry...")
+                    #print("Rate limit hit... Will retry...")
+                    sleep_seconds = min(((tries * 2) ** 2), 900 - total_sleep_seconds)
+                    total_sleep_seconds = total_sleep_seconds + sleep_seconds
+
+                elif resp.status_code >= 500:
+                    logger.warning("Server-side error... Will retry...")
+                    #print("Server-side error... Will retry...")
+                    sleep_seconds = 30
+                else:
+                    #Other errors are a "one and done", no use in retrying error...
+
+                    raise requests.exceptions.HTTPError
+
+
                 # mini exponential backoff here.
-                time.sleep(tries ** 2)
+
+                print(f"Will retry in {sleep_seconds} seconds...")
+                time.sleep(sleep_seconds)
                 continue
 
             break
-
-        #TODO: Need to update to Labs error messages.
-        if resp.status_code != 200:
-
-            if resp.status_code == 429:
-                print( "Request rate limit hit...")
-            else:
-                print(f"Error code: {resp.status_code}")
-                print(f"Error message: {resp.text}")
-                # error_message = resp.json()["error"]["message"]
-                # logger.error("HTTP Error code: {}: {}".format(resp.status_code, error_message))
-                # logger.error("Rule payload: {}".format(kwargs["request_parameters"]))
-                raise requests.exceptions.HTTPError
 
         return resp
 
@@ -127,16 +143,14 @@ def request(session, url, request_parameters, **kwargs):
     if isinstance(request_parameters, dict):
         request_parameters = json.dumps(request_parameters)
     logger.debug("sending request")
-    #result = session.post(url, data=request_parameters, **kwargs)
+
     request_json = json.loads(request_parameters)
 
+    #Using POST command, not yet supported in Labs.
+    #result = session.post(url, data=request_parameters, **kwargs)
 
-    #HANDLE LABS REQUEST PARAMETERS --> GET URL
-    #print(urlencode(request_json))
-
+    #New Labs-specific code in support of GET requests.
     request_url = urlencode(request_json)
-
-    #TODO: new Labs-specific code in support of GET requests. Will need to URL encode too.
     url = f"{url}?{request_url}"
 
     result = session.get(url, **kwargs)
@@ -221,6 +235,8 @@ class ResultStream:
         self.execute_request()
         self.stream_started = True
         while True:
+            if self.current_tweets == None:
+                break
             for tweet in self.current_tweets:
                 if self.total_results >= self.max_tweets:
                     break
@@ -293,7 +309,7 @@ class ResultStream:
         return str_
 
 
-def collect_results(query, max_tweets=500, result_stream_args=None):
+def collect_results(query, max_tweets=1000, result_stream_args=None):
     """
     Utility function to quickly get a list of tweets from a ``ResultStream``
     without keeping the object around. Requires your args to be configured
