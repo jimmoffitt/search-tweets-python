@@ -57,11 +57,12 @@ def parse_cmd_args():
                            default=None,
                            help=help_msg)
 
-    argparser.add_argument("--api_version",
-                           dest="api_version",
-                           default=None,
-                           choices=["labs_v2"],
-                           help="The API version you are using")
+    # TODO: Drop after testing.
+    # argparser.add_argument("--api_version",
+    #                        dest="api_version",
+    #                        default=None,
+    #                        choices=["labs_v2"],
+    #                        help="The API version you are using")
 
     #TODO: count details. Not supported in Labs, needed for next version.
     # argparser.add_argument("--count-bucket",
@@ -69,6 +70,11 @@ def parse_cmd_args():
     #                        default=None,
     #                        help=("""Bucket size for counts API. Options:,
     #                              day, hour, minute (default is 'day')."""))
+
+    argparser.add_argument("--query",
+                           dest="query",
+                           default=None,
+                           help="Search query. (See: https://developer.twitter.com/en/docs/labs/recent-search/guides/search-queries)")
 
     argparser.add_argument("--start-time",
                            dest="start_time",
@@ -82,11 +88,6 @@ def parse_cmd_args():
                            help="""End of datetime window, format
                                  'YYYY-mm-DDTHH:MM' (default: most recent
                                  date)""")
-
-    argparser.add_argument("--query",
-                           dest="query",
-                           default=None,
-                           help="Search query. (See: https://developer.twitter.com/en/docs/labs/recent-search/guides/search-queries)")
 
     argparser.add_argument("--since-id",
                        dest="since_id",
@@ -104,6 +105,13 @@ def parse_cmd_args():
                                 "(default 10; max 100) - corresponds to "
                                 "'max_results' in the API")
 
+    #TODO: Support this command-line, or user needs to set value in configuration file?
+    argparser.add_argument("--tweet-fields",
+                       dest="tweet_fields",
+                       default="id,created_at,text",
+                       help="""A comma-delimited list of Tweet JSON attributions to include in endpoint responses. (default: "id,created_at,text")""")
+
+    #client options.
     argparser.add_argument("--max-tweets", dest="max_tweets",
                            type=int,
                            help="Maximum number of Tweets to return for this session of requests.")
@@ -141,7 +149,7 @@ def parse_cmd_args():
                            dest="extra_headers",
                            type=str,
                            default=None,
-                           help="JSON-formatted str representing a dict of additional request headers")
+                           help="JSON-formatted str representing a dict of additional HTTP request headers")
 
     argparser.add_argument("--debug",
                            dest="debug",
@@ -176,7 +184,6 @@ def main():
     logger.debug(json.dumps(_filter_sensitive_args(configfile_dict), indent=4))
 
     creds_dict = load_credentials(filename=args_dict["credential_file"],
-                                  api_version=args_dict["api_version"],
                                   yaml_key=args_dict["credential_yaml_key"],
                                   env_overwrite=args_dict["env_overwrite"])
 
@@ -212,7 +219,6 @@ def main():
     for tweet in stream:
         if config_dict["print_stream"] is True:
             print(json.dumps(tweet))
-
 
 if __name__ == '__main__':
     main()
