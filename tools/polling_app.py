@@ -58,20 +58,6 @@ def parse_cmd_args():
                            default=None,
                            help=help_msg)
 
-    # TODO: Drop after testing.
-    # argparser.add_argument("--api_version",
-    #                        dest="api_version",
-    #                        default=None,
-    #                        choices=["labs_v2"],
-    #                        help="The API version you are using")
-
-    #TODO: count details. Not supported in Labs, needed for next version.
-    # argparser.add_argument("--count-bucket",
-    #                        dest="count_bucket",
-    #                        default=None,
-    #                        help=("""Bucket size for counts API. Options:,
-    #                              day, hour, minute (default is 'day')."""))
-
     argparser.add_argument("--query",
                            dest="query",
                            default=None,
@@ -217,10 +203,6 @@ def main():
         start = time.time()
         rs = ResultStream(tweetify=False, **stream_params)
 
-        print('------------------------------------------------')
-        print(rs.request_parameters)
-        print('------------------------------------------------')
-
         logger.debug(str(rs))
 
         if config_dict.get("filename_prefix") is not None:
@@ -243,23 +225,12 @@ def main():
                 print(json.dumps(tweet))
 
         #Prepare next query, by setting the since_id request parameter.
-        print(f"Newest_id: {newest_id}")
-        print(tweets_num)
-        #print(rs.request_parameters)
-        try:
-            del rs.request_parameters["next_token"]
-        except:
-            pass
-
-        try:
-            del rs.request_parameters["start_time"]
-        except:
-            pass
-
-        #rs.request_parameters.update(since_id = newest_id)
-        #stream_params.update(since_id = newest_id) #TODO: manage other request parameters....
+        print(f"{tweets_num} new Tweets. Newest_id: {newest_id}")
 
         request_json = json.loads(stream_params['request_parameters'])
+        if 'start_time' in request_json.keys():
+            del request_json['start_time']
+
         request_json.update(since_id = newest_id)
         stream_params['request_parameters'] = json.dumps(request_json)
 
@@ -271,8 +242,6 @@ def main():
             sleep_interval = (int(config_dict["interval"]) * 60)
 
         time.sleep(sleep_interval)
-
-
 
 if __name__ == '__main__':
     main()
