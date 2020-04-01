@@ -236,7 +236,7 @@ def main():
 
         duration = time.time() - start
 
-        sleep_interval = (int(config_dict["interval"]) * 60) - duration
+        sleep_interval = (float(config_dict["interval"]) * 60) - duration
 
         if sleep_interval < 0:
             sleep_interval = (int(config_dict["interval"]) * 60)

@@ -22,7 +22,7 @@ from tweet_parser.tweet import Tweet
 
 from .utils import merge_dicts
 
-from .api_utils import infer_endpoint, change_to_count_endpoint
+#from .api_utils import infer_endpoint, change_to_count_endpoint
 
 from ._version import VERSION
 
@@ -77,7 +77,6 @@ def retry(func):
     def retried_func(*args, **kwargs):
         max_tries = 10
         tries = 0
-        sleep_seconds = 0
         total_sleep_seconds = 0
 
         while True:
@@ -96,28 +95,28 @@ def retry(func):
 
                 tries += 1
 
-                logger.error(f"HTTP Error code: {resp.status_code}: {resp.text}")
-                logger.error(f"Rule payload: {kwargs['request_parameters']}")
+                logger.error(f" HTTP Error code: {resp.status_code}: {resp.text} | {resp.reason}")
+                logger.error(f" Request payload: {kwargs['request_parameters']}")
 
                 if resp.status_code == 429:
-                    logger.warning("Rate limit hit... Will retry...")
-                    #print("Rate limit hit... Will retry...")
-                    sleep_seconds = min(((tries * 2) ** 2), 900 - total_sleep_seconds)
+                    logger.error("Rate limit hit... Will retry...")
+                    #Expontential backoff, but within a 15-minute (900 seconds) period. No sense in backing off for more than 15 minutes.
+                    sleep_seconds = min(((tries * 2) ** 2), max(900 - total_sleep_seconds,30))
                     total_sleep_seconds = total_sleep_seconds + sleep_seconds
 
                 elif resp.status_code >= 500:
-                    logger.warning("Server-side error... Will retry...")
-                    #print("Server-side error... Will retry...")
+                    logger.error("Server-side error... Will retry...")
                     sleep_seconds = 30
                 else:
                     #Other errors are a "one and done", no use in retrying error...
 
+                    logger.error('Quitting... ')
                     raise requests.exceptions.HTTPError
 
 
                 # mini exponential backoff here.
 
-                print(f"Will retry in {sleep_seconds} seconds...")
+                logger.error(f"Will retry in {sleep_seconds} seconds...")
                 time.sleep(sleep_seconds)
                 continue
 
@@ -211,9 +210,10 @@ class ResultStream:
         # magic number of requests!
         self.max_requests = (max_requests if max_requests is not None
                              else 10 ** 9)
-        self.endpoint = (change_to_count_endpoint(endpoint)
-                         if infer_endpoint(request_parameters) == "counts"
-                         else endpoint)
+        # self.endpoint = (change_to_count_endpoint(endpoint)
+        #                  if infer_endpoint(request_parameters) == "counts"
+        #                  else endpoint)
+        self.endpoint = endpoint
         #TODO: Labs does not support counts.
         # validate_count_api(self.request_parameters, self.endpoint)
 
@@ -293,7 +293,7 @@ class ResultStream:
             #TODO: Migration. Labs details/changes.
             meta = resp.get("meta", None)
             self.next_token = meta.get("next_token", None)
-            self.current_tweets = resp["data"]
+            self.current_tweets = resp.get("data", None)
 
         except:
             print("Error parsing content as JSON.")
