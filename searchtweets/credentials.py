@@ -58,27 +58,6 @@ def _load_env_credentials():
 
 def _parse_credentials(search_creds, api_version=None):
 
-    #TODO: Need this version code?
-    # if api_version is None:
-    #     api_version = search_creds.get("api_version", None)
-    #     # attempt to infer account type
-    #     if api_version is None:
-    #         if '/labs/1/' in search_creds.get("endpoint"):
-    #             api_version = "1"
-    #         elif '/labs/2/' in search_creds.get("endpoint"):
-    #             api_version = "2"
-    #         else:
-    #             pass
-
-    #TODO: not requiring Labs version number?
-    # if api_version not in {"labs_v1", "labs_v2"}:
-    #     msg = """API version is not specified and cannot be inferred.
-    #     Please check your credential file, arguments, or environment variables
-    #     for issues. Available API versions includes: labs_v1, labs_v2'.
-    #     """
-    #     logger.error(msg)
-    #     raise KeyError
-
     try:
 
         if "bearer_token" not in search_creds:

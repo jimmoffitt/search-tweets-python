@@ -202,8 +202,7 @@ def read_config(filename):
 
     # ensure args are renamed correctly:
     config_dict = {k.replace('-', '_'): v for k, v in config_dict.items()}
-    # YAML will parse datestrings as datetimes; we'll convert them here if they
-    # exist
+    # YAML will parse datestrings as datetimes; we'll convert them here if they exist
 
     if config_dict.get("start_time") is not None:
         config_dict["start_time"] = str(config_dict["start_time"])

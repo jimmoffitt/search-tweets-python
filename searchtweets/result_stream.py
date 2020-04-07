@@ -10,7 +10,6 @@ arguments and returns a stream of results to the user.
 """
 
 import time
-import re
 import logging
 import requests
 from urllib.parse import urlencode
@@ -21,8 +20,6 @@ except ImportError:
 from tweet_parser.tweet import Tweet
 
 from .utils import merge_dicts
-
-#from .api_utils import infer_endpoint, change_to_count_endpoint
 
 from ._version import VERSION
 
@@ -46,8 +43,6 @@ def make_session(bearer_token=None, extra_headers_dict=None):
     session.trust_env = False
     headers = {'Accept-encoding': 'gzip',
                'User-Agent': 'twitterdev-search-tweets-python-labs/' + VERSION}
-
-    #Labs: TODO: add back in consumer token support.
 
     if bearer_token:
         logger.info("using bearer token for authentication")
@@ -109,12 +104,9 @@ def retry(func):
                     sleep_seconds = 30
                 else:
                     #Other errors are a "one and done", no use in retrying error...
-
                     logger.error('Quitting... ')
                     raise requests.exceptions.HTTPError
 
-
-                # mini exponential backoff here.
 
                 logger.error(f"Will retry in {sleep_seconds} seconds...")
                 time.sleep(sleep_seconds)
@@ -210,12 +202,7 @@ class ResultStream:
         # magic number of requests!
         self.max_requests = (max_requests if max_requests is not None
                              else 10 ** 9)
-        # self.endpoint = (change_to_count_endpoint(endpoint)
-        #                  if infer_endpoint(request_parameters) == "counts"
-        #                  else endpoint)
         self.endpoint = endpoint
-        #TODO: Labs does not support counts.
-        # validate_count_api(self.request_parameters, self.endpoint)
 
     def stream(self):
         """
@@ -264,14 +251,6 @@ class ResultStream:
         self.session = make_session(self.bearer_token,
                                     self.extra_headers_dict)
 
-    # def check_counts(self):
-    #     """
-    #     Disables tweet parsing if the count API is used.
-    #     """
-    #     if "counts" in re.split("[/.]", self.endpoint):
-    #         logger.info("disabling tweet parsing due to counts API usage")
-    #         self._tweet_func = lambda x: x
-
     def execute_request(self):
         """
         Sends the request to the API and parses the json response.
@@ -298,8 +277,6 @@ class ResultStream:
         except:
             print("Error parsing content as JSON.")
 
-
-
     def __repr__(self):
         repr_keys = ["endpoint", "request_parameters",
                      "tweetify", "max_tweets"]
@@ -307,7 +284,6 @@ class ResultStream:
                           indent=4)
         str_ = "ResultStream: \n\t" + str_
         return str_
-
 
 def collect_results(query, max_tweets=1000, result_stream_args=None):
     """
@@ -331,7 +307,6 @@ def collect_results(query, max_tweets=1000, result_stream_args=None):
         >>> tweets = collect_results(query,
                                      max_tweets=500,
                                      result_stream_args=search_args)
-
     """
     if result_stream_args is None:
         logger.error("This function requires a configuration dict for the "
