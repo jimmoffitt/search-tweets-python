@@ -213,8 +213,9 @@ def main():
             stream = rs.stream()
 
         first_tweet = True
-
         tweets_num = 0
+
+        #Iterate through Tweet array and handle output.
         for tweet in stream:
             tweets_num = tweets_num + 1
             #Get Tweet ID from first Tweet
@@ -224,10 +225,12 @@ def main():
             if config_dict["print_stream"] is True:
                 print(json.dumps(tweet))
 
+        #This polling script switches to a since_id requests and removes the start_time parameter if it is used for backfill.
         #Prepare next query, by setting the since_id request parameter.
         print(f"{tweets_num} new Tweets. Newest_id: {newest_id}")
 
         request_json = json.loads(stream_params['request_parameters'])
+
         if 'start_time' in request_json.keys():
             del request_json['start_time']
 
@@ -239,7 +242,7 @@ def main():
         sleep_interval = (float(config_dict["interval"]) * 60) - duration
 
         if sleep_interval < 0:
-            sleep_interval = (int(config_dict["interval"]) * 60)
+            sleep_interval = (float(config_dict["interval"]) * 60)
 
         time.sleep(sleep_interval)
 
