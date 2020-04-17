@@ -98,11 +98,10 @@ def parse_cmd_args():
                                 "(default 10; max 100) - corresponds to "
                                 "'max_results' in the API")
 
-    #TODO: Support this command-line, or user needs to set value in configuration file?
     argparser.add_argument("--tweet-fields",
                        dest="tweet_fields",
-                       default="id,created_at,text",
-                       help="""A comma-delimited list of Tweet JSON attributions to include in endpoint responses. (default: "id,created_at,text")""")
+                       default=None,
+                       help="""A comma-delimited list of Tweet JSON attributions to include in endpoint responses. (Endpoint default: "id,created_at,text")""")
 
     #client options.
     argparser.add_argument("--max-tweets", dest="max_tweets",
@@ -195,7 +194,7 @@ def main():
         sys.exit(1)
 
     stream_params = gen_params_from_config(config_dict)
-    logger.debug("full arguments passed to the ResultStream object sans password")
+    logger.debug("full arguments passed to the ResultStream object sans credentials")
     logger.debug(json.dumps(_filter_sensitive_args(stream_params), indent=4))
 
     while True:
