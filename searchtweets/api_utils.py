@@ -9,6 +9,7 @@ rule generation, and related.
 
 import re
 import datetime
+from dateutil.relativedelta import *
 import logging
 try:
     import ujson as json
@@ -20,9 +21,6 @@ __all__ = ["gen_request_parameters",
            "convert_utc_time"]
 
 logger = logging.getLogger(__name__)
-
-
-#TODO: NEED TO CONVERT TO ISO FROM GNIP
 
 def convert_utc_time(datetime_str):
     """
@@ -55,18 +53,29 @@ def convert_utc_time(datetime_str):
         >>> convert_utc_time("2017-08-02T00:00")
         '201708020000'
     """
+
     if not datetime_str:
         return None
-    if not set(['-', ':']) & set(datetime_str):
-        _date = datetime.datetime.strptime(datetime_str, "%Y%m%d%H%M")
-    else:
-        try:
-            if "T" in datetime_str:
-                # command line with 'T'
-                datetime_str = datetime_str.replace('T', ' ')
+    try:
+        if len(datetime_str) <= 5:
+            _date = datetime.datetime.utcnow()
+            #parse out numeric character.
+            num = float(datetime_str[:-1])
+            if 'd' in datetime_str:
+                _date = (_date + relativedelta(days=-num))
+            elif 'h' in datetime_str:
+                _date = (_date + relativedelta(hours=-num))
+            elif 'm' in datetime_str:
+                _date = (_date + relativedelta(minutes=-num))
+        elif not set(['-', ':']) & set(datetime_str):
+            _date = datetime.datetime.strptime(datetime_str, "%Y%m%d%H%M")
+        elif 'T' in datetime_str:
+            # command line with 'T'
+            datetime_str = datetime_str.replace('T', ' ')
             _date = datetime.datetime.strptime(datetime_str, "%Y-%m-%d %H:%M")
-        except ValueError:
-            _date = datetime.datetime.strptime(datetime_str, "%Y-%m-%d")
+    except ValueError:
+        _date = datetime.datetime.strptime(datetime_str, "%Y-%m-%d")
+
     return _date.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 def gen_request_parameters(query, results_per_call=None,
@@ -142,7 +151,6 @@ def gen_params_from_config(config_dict):
 
     # This numeric parameter comes in as a string when it's parsed
     results_per_call = intify(config_dict.get("results_per_call", None))
-
 
     query = gen_request_parameters(query=config_dict["query"],
                             start_time=config_dict.get("start_time", None),
