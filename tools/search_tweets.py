@@ -108,7 +108,7 @@ def parse_cmd_args():
     #TODO: Support this command-line, or user needs to set value in configuration file?
     argparser.add_argument("--tweet-fields",
                        dest="tweet_fields",
-                       default="id,created_at,text",
+                       default=None,
                        help="""A comma-delimited list of Tweet JSON attributions to include in endpoint responses. (default: "id,created_at,text")""")
 
     #client options.
