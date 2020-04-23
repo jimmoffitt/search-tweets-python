@@ -4,7 +4,6 @@
 # https://opensource.org/licenses/MIT
 """
 This module contains the request handing and actual API wrapping functionality.
-
 Its core method is the ``ResultStream`` object, which takes the API call
 arguments and returns a stream of results to the user.
 """
@@ -29,7 +28,6 @@ logger = logging.getLogger(__name__)
 def make_session(bearer_token=None, extra_headers_dict=None):
     """Creates a Requests Session for use. Accepts a bearer token
     for Labs.
-
     Args:
         bearer_token (str): token for a Labs user.
     """
@@ -50,24 +48,19 @@ def make_session(bearer_token=None, extra_headers_dict=None):
         session.headers = headers
 
     if extra_headers_dict:
-        headers.update(extra_headers_dict) 
+        headers.update(extra_headers_dict)
     return session
 
 def retry(func):
     """
     Decorator to handle API retries and exceptions. Defaults to five retries.
-
     Rate-limit (429) and server-side errors (5XX) implement a retry design.
     Other 4XX errors are a 'one and done' type error.
-
     Retries implement an exponential backoff...
-
     Args:
         func (function): function for decoration
-
     Returns:
         decorated function
-
     """
     def retried_func(*args, **kwargs):
         max_tries = 10
@@ -123,7 +116,6 @@ def retry(func):
 def request(session, url, request_parameters, **kwargs):
     """
     Executes a request with the given payload and arguments.
-
     Args:
         session (requests.Session): the valid session object
         url (str): Valid API endpoint
@@ -153,27 +145,29 @@ class ResultStream:
     Class to represent an API query that handles two major functionality
     pieces: wrapping metadata around a specific API call and automatic
     pagination of results.
-
     Args:
-        bearer_token (str): bearer token for premium users
-        endpoint (str): API endpoint; see your console at developer.twitter.com
+        bearer_token (str): bearer token for Labs.
+
+        endpoint (str): API endpoint.
+
         request_parameters (json or dict): payload for the post request
+
         max_tweets (int): max number results that will be returned from this
         instance. Note that this can be slightly lower than the total returned
         from the API call  - e.g., setting ``max_tweets = 10`` would return
-        ten results, but an API call will return at minimum 100 results by defaule.
+        ten results, but an API call will return at minimum 100 results by default.
+
         tweetify (bool): If you are grabbing tweets and not counts, use the
             tweet parser library to convert each raw tweet package to a Tweet
             with lazy properties.
+
         max_requests (int): A hard cutoff for the number of API calls this
-        instance will make. Good for testing in sandbox premium environments. 
+        instance will make. Good for testing in Labs environment.
+
         extra_headers_dict (dict): custom headers to add
-
-
     Example:
         >>> rs = ResultStream(**search_args, request_parameters=rule, max_pages=1)
         >>> results = list(rs.stream())
-
     """
     # leaving this here to have an API call counter for ALL objects in your
     # session, helping with usage of the convenience functions in the library.
@@ -190,7 +184,7 @@ class ResultStream:
         self.tweetify = tweetify
         # magic number of max tweets if you pass a non_int
         self.max_tweets = (max_tweets if isinstance(max_tweets, int)
-                            else 10 ** 15)
+                           else 10 ** 15)
 
         self.total_results = 0
         self.n_requests = 0
@@ -209,7 +203,6 @@ class ResultStream:
         Main entry point for the data from the API. Will automatically paginate
         through the results via the ``next`` token and return up to ``max_tweets``
         tweets or up to ``max_requests`` API calls, whichever is lower.
-
         Usage:
             >>> result_stream = ResultStream(**kwargs)
             >>> stream = result_stream.stream()
@@ -218,9 +211,9 @@ class ResultStream:
             >>> results = list(ResultStream(**kwargs).stream())
         """
         self.init_session()
-
         self.execute_request()
         self.stream_started = True
+
         while True:
             if self.current_tweets == None:
                 break
@@ -232,12 +225,13 @@ class ResultStream:
 
             if self.next_token and self.total_results < self.max_tweets and self.n_requests <= self.max_requests:
                 self.request_parameters = merge_dicts(self.request_parameters,
-                                                {"next_token": self.next_token})
+                                                      {"next_token": self.next_token})
                 logger.info("paging; total requests read so far: {}"
                             .format(self.n_requests))
                 self.execute_request()
             else:
                 break
+
         logger.info("ending stream at {} tweets".format(self.total_results))
         self.current_tweets = None
         self.session.close()
@@ -269,7 +263,6 @@ class ResultStream:
         try:
             resp = json.loads(resp.content.decode(resp.encoding))
 
-            #TODO: Migration. Labs details/changes.
             meta = resp.get("meta", None)
             self.next_token = meta.get("next_token", None)
             self.current_tweets = resp.get("data", None)
@@ -290,7 +283,6 @@ def collect_results(query, max_tweets=1000, result_stream_args=None):
     Utility function to quickly get a list of tweets from a ``ResultStream``
     without keeping the object around. Requires your args to be configured
     prior to using.
-
     Args:
         query (str): valid powertrack rule for your account, preferably
         generated by the `gen_request_parameters` function.
@@ -298,10 +290,8 @@ def collect_results(query, max_tweets=1000, result_stream_args=None):
         the API / underlying ``ResultStream`` object.
         result_stream_args (dict): configuration dict that has connection
         information for a ``ResultStream`` object.
-
     Returns:
         list of results
-
     Example:
         >>> from searchtweets import collect_results
         >>> tweets = collect_results(query,
